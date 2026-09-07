@@ -78,7 +78,6 @@ sequenceDiagram
     alt newBooked > bufferLimit (Hard limit exceeded)
         note over B: Validation failed!
         B->>DB: ROLLBACK Transaction
-        deactivate DB
         note over B: Throws ConflictException (Booking rejected)
     else newBooked <= bufferLimit (Within acceptable limit)
         note over B: Validation passed!
@@ -89,8 +88,8 @@ sequenceDiagram
         end
         B->>DB: UPDATE "Availability" SET currentBooked = newBooked
         B->>DB: COMMIT Transaction
-        deactivate DB
     end
+    deactivate DB
 ```
 ---
 

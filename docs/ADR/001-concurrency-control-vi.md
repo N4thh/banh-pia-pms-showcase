@@ -76,7 +76,6 @@ sequenceDiagram
     alt newBooked > bufferLimit (Vượt ngưỡng cứng)
         note over B: Kiểm tra thất bại!
         B->>DB: ROLLBACK Transaction
-        deactivate DB
         note over B: Trả về lỗi: ConflictException (Từ chối đơn hoàn toàn)
     else newBooked <= bufferLimit (Vẫn nằm trong giới hạn cho phép)
         note over B: Kiểm tra thành công!
@@ -87,8 +86,8 @@ sequenceDiagram
         end
         B->>DB: UPDATE "Availability" SET currentBooked = newBooked
         B->>DB: COMMIT Transaction
-        deactivate DB
     end
+    deactivate DB
 ```
 
 ---
