@@ -89,6 +89,7 @@ sequenceDiagram
         B->>DB: COMMIT Transaction
         deactivate DB
     end
+```
 
 ---
 

@@ -91,8 +91,9 @@ sequenceDiagram
         B->>DB: COMMIT Transaction
         deactivate DB
     end
-
+```
 ---
+
 
 ## 4. Trade-offs & Limitations
 
