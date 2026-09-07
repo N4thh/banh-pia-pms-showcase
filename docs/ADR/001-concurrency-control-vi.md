@@ -38,8 +38,57 @@ Trả lời:
 
 ```mermaid
 sequenceDiagram
-...
-```
+    autonumber
+    actor A as Khách hàng A (đến trước)
+    actor B as Khách hàng B (đến cùng mili-giây)
+    participant DB as PostgreSQL (Bảng Availability)
+
+    note over A, B: Cả hai khách hàng cùng đặt bánh cho một ngày nhất định
+
+    %% Khách A bắt đầu chiếm chỗ
+    A->>DB: Bắt đầu Transaction (tx)
+    A->>DB: SET LOCAL lock_timeout = '3s'
+    A->>DB: SELECT ... WHERE cakeId = X AND date = Y FOR UPDATE
+    activate DB
+    note right of DB: Khóa độc quyền (Exclusive Lock) dòng ngày Y cho Khách A
+
+    %% Khách B cố gắng lock dòng đó và bị block
+    B->>DB: Bắt đầu Transaction (tx)
+    B->>DB: SET LOCAL lock_timeout = '3s'
+    B->>DB: SELECT ... WHERE cakeId = X AND date = Y FOR UPDATE
+    note over B, DB: Bị chặn (Blocked) - Chờ Khách A hoàn tất (tối đa 3 giây)
+
+    %% Khách A tiếp tục thực thi logic
+    DB-->>A: Trả về dữ liệu dòng Availability (currentBooked, bufferLimit, maxCapacity)
+    note over A: Tính: newBooked = currentBooked + quantity
+    note over A: Kiểm tra: newBooked <= bufferLimit (Hợp lệ)
+    A->>DB: UPDATE "Availability" SET currentBooked = newBooked
+    A->>DB: COMMIT Transaction
+    deactivate DB
+    note right of DB: Giải phóng khóa (Unlock) dòng ngày Y
+
+    %% Khách B được đánh thức và tiếp nhận khóa
+    activate DB
+    note right of DB: Khách B chiếm được khóa độc quyền (Exclusive Lock)
+    DB-->>B: Trả về dữ liệu dòng Availability MỚI (đã tăng sau khi A đặt)
+    note over B: Tính: newBooked = currentBooked + quantity
+
+    alt newBooked > bufferLimit (Vượt ngưỡng cứng)
+        note over B: Kiểm tra thất bại!
+        B->>DB: ROLLBACK Transaction
+        deactivate DB
+        note over B: Trả về lỗi: ConflictException (Từ chối đơn hoàn toàn)
+    else newBooked <= bufferLimit (Vẫn nằm trong giới hạn cho phép)
+        note over B: Kiểm tra thành công!
+        alt newBooked > maxCapacity (Vượt ngưỡng mềm)
+            note over B: Đơn hàng được xếp trạng thái: WAITLIST
+        else newBooked <= maxCapacity (Trong tầm công suất)
+            note over B: Đơn hàng được xếp trạng thái: CONFIRMED
+        end
+        B->>DB: UPDATE "Availability" SET currentBooked = newBooked
+        B->>DB: COMMIT Transaction
+        deactivate DB
+    end
 
 ---
 

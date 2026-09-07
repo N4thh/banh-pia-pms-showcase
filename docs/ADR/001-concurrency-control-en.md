@@ -41,46 +41,56 @@ For example, when the system has only 1 cake slot remaining and Client A is the 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor UserA as Customer A
-    actor UserB as Customer B
-    participant DB as Database (PostgreSQL)
+    actor A as Customer A (First)
+    actor B as Customer B (Same millisecond)
+    participant DB as PostgreSQL (Availability Table)
 
-    rect rgb(240, 248, 255)
-        note right of UserA: Start booking (Transaction A)
-        UserA->>DB: SELECT ... FOR UPDATE (Lock slot row for day X)
-        activate DB
-        note right of DB: Slot row for day X is exclusively locked (Exclusive Lock)
-    end
+    note over A, B: Both customers place orders for the exact same date
 
-    rect rgb(255, 240, 245)
-        note right of UserB: Customer B also books at the same time (Transaction B)
-        UserB->>DB: SELECT ... FOR UPDATE (Request lock on slot row for day X)
-        note over UserB, DB: Blocked - Waiting in queue for up to 3 seconds
-    end
+    %% Customer A starts
+    A->>DB: Begin Transaction (tx)
+    A->>DB: SET LOCAL lock_timeout = '3s'
+    A->>DB: SELECT ... WHERE cakeId = X AND date = Y FOR UPDATE
+    activate DB
+    note right of DB: Exclusive Lock acquired on row Y for Customer A
 
-    rect rgb(240, 248, 255)
-        DB-->>UserA: Return the current slot quantity
-        note right of UserA: Calculate & check: newBooked <= bufferLimit
-        UserA->>DB: UPDATE currentBooked = newBooked
-        UserA->>DB: COMMIT Transaction
+    %% Customer B tries to select and gets blocked
+    B->>DB: Begin Transaction (tx)
+    B->>DB: SET LOCAL lock_timeout = '3s'
+    B->>DB: SELECT ... WHERE cakeId = X AND date = Y FOR UPDATE
+    note over B, DB: Blocked - Waiting in queue for Customer A to release lock (max 3s)
+
+    %% Customer A finishes processing
+    DB-->>A: Returns Availability row (currentBooked, bufferLimit, maxCapacity)
+    note over A: Calculate: newBooked = currentBooked + quantity
+    note over A: Validate: newBooked <= bufferLimit (Valid)
+    A->>DB: UPDATE "Availability" SET currentBooked = newBooked
+    A->>DB: COMMIT Transaction
+    deactivate DB
+    note right of DB: Row Y unlocked
+
+    %% Customer B wakes up and acquires the lock
+    activate DB
+    note right of DB: Customer B acquires Exclusive Lock
+    DB-->>B: Returns LATEST Availability row (updated with A's booking value)
+    note over B: Calculate: newBooked = currentBooked + quantity
+
+    alt newBooked > bufferLimit (Hard limit exceeded)
+        note over B: Validation failed!
+        B->>DB: ROLLBACK Transaction
         deactivate DB
-        note right of DB: Release lock (Unlock)
-    end
-
-    rect rgb(255, 240, 245)
-        activate DB
-        note right of DB: Transaction B wakes up and successfully acquires the lock
-        DB-->>UserB: Return the NEW slot quantity (updated by A)
-        note right of UserB: Check: newBooked > bufferLimit ?
-        alt Exceeds the Hard Limit
-            UserB-->>DB: ROLLBACK Transaction
-            note over UserB: Return "No availability" error (Reject)
-        else Still within the 3% buffer
-            UserB->>DB: UPDATE & COMMIT (Order status: WAITLIST)
+        note over B: Throws ConflictException (Booking rejected)
+    else newBooked <= bufferLimit (Within acceptable limit)
+        note over B: Validation passed!
+        alt newBooked > maxCapacity (Soft limit exceeded)
+            note over B: Set Order Status: WAITLIST
+        else newBooked <= maxCapacity (Standard capacity)
+            note over B: Set Order Status: CONFIRMED
         end
+        B->>DB: UPDATE "Availability" SET currentBooked = newBooked
+        B->>DB: COMMIT Transaction
         deactivate DB
     end
-```
 
 ---
 
