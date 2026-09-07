@@ -69,6 +69,16 @@ graph TD
 - PayOS handles payment processing and sends a webhook when a transaction occurs. The backend verifies the signature before updating the order status.
 - The Telegram bot sends real-time notifications to the admin whenever there is a new order or a successful payment.
 
+## Technical Decisions (ADR)
+
+Full write-ups in [`docs/ADR/`](./docs/ADR):
+
+| ADR |          Problem           |                  Decision                |                                              Docs                                               |
+|-----|----------------------------|------------------------------------------|-------------------------------------------------------------------------------------------------|
+| 001 | Concurrent double-booking  | Pessimistic locking + overbooking buffer | [VI](./docs/ADR/001-concurrency-control-vi.md) · [EN](./docs/ADR/001-concurrency-control-en.md) |
+
+
+
 ## Tech Stack
 
 **Backend**
