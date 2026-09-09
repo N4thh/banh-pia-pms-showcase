@@ -81,7 +81,8 @@ Full write-ups in [`docs/ADR/`](./docs/ADR):
 
 | ADR |          Problem           |                  Decision                |                                              Docs                                               |
 |-----|----------------------------|------------------------------------------|-------------------------------------------------------------------------------------------------|
-| 001 | Concurrent double-booking  | Pessimistic locking + overbooking buffer | [VI](./docs/ADR/001-concurrency-control-vi.md) · [EN](./docs/ADR/001-concurrency-control-en.md) |
+| 001 | Concurrent double-booking  | Pessimistic locking + overbooking buffer | [VI](./docs/ADR/001-concurrency-control/001-concurrency-control-vi.md) · [EN](./docs/ADR/001-concurrency-control/001-concurrency-control-en.md) |
+| 002 | PayOS webhook security     | Signature verification + idempotent processing | [VI](./docs/ADR/002-payos-webhook-security/002-payos-webhook-security-vi.md) · [EN](./docs/ADR/002-payos-webhook-security/002-payos-webhook-security-en.md) |
 
 
 

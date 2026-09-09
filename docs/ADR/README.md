@@ -15,4 +15,5 @@ Decision → Trade-offs & Limitations → What I'd do differently.
 
 | # | Problem | Decision | Status | Docs |
 |---|---|---|---|---|
-| 001 | Concurrent double-booking on slot reservation | Pessimistic locking + 3% overbooking buffer | Applied | [VI](./001-concurrency-control-vi.md) · [EN](./001-concurrency-control-en.md) |
+| 001 | Concurrent double-booking on slot reservation | Pessimistic locking + 3% overbooking buffer | Applied | [VI](./001-concurrency-control/001-concurrency-control-vi.md) · [EN](./001-concurrency-control/001-concurrency-control-en.md) |
+| 002 | PayOS webhook security | Signature verification + idempotent processing | Applied | [VI](./002-payos-webhook-security/002-payos-webhook-security-vi.md) · [EN](./002-payos-webhook-security/002-payos-webhook-security-en.md) |
