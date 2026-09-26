@@ -17,3 +17,4 @@ Decision → Trade-offs & Limitations → What I'd do differently.
 |---|---|---|---|---|
 | 001 | Concurrent double-booking on slot reservation | Pessimistic locking + 3% overbooking buffer | Applied | [VI](./001-concurrency-control/001-concurrency-control-vi.md) · [EN](./001-concurrency-control/001-concurrency-control-en.md) |
 | 002 | PayOS webhook security | Signature verification + idempotent processing | Applied | [VI](./002-payos-webhook-security/002-payos-webhook-security-vi.md) · [EN](./002-payos-webhook-security/002-payos-webhook-security-en.md) |
+| 003 | Atomic multi-entity order creation | DB transaction wraps writes, Redis hold kept outside | [VI](./docs/ADR/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md) · [EN](./docs/ADR/003-atomic-multi-entity-order/003-atomic-multi-entity-order-en.md) |

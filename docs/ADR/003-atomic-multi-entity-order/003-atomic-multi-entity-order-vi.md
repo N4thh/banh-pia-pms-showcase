@@ -1,59 +1,89 @@
-# ADR-003: Atomic Multi-Entity Order Creation & Boundary Design
+## ADR-[003]: Atomic Multi-Entity Order Creation & Boundary Design
 
-**Ngày viết:** 25/09/2026  
-**Trạng thái:** chưa xong
-
----
-
-## 1. Context
-
-**Câu hỏi dẫn dắt:** Bài toán này khác gì so với ADR-001 (chỉ 1 bảng Availability)? Kịch bản cụ thể nào cho thấy nếu KHÔNG xử lý đúng, hệ thống sẽ hỏng ra sao? Vì sao vấn đề này không thể giải quyết bằng cách ghi từng bảng một cách độc lập, kiểm tra lỗi thủ công sau mỗi bước?
-
-**Phân tích & Trả lời:**
-1. Khi bấm đặt hàng thì các bảng data liên quan như: `Order`, `Address`, `OrderItem` sẽ được tạo mới cùng lúc với những thông tin tương ứng. Việc ghi vào nhiều bảng cùng lúc tại sao lại tạo ra những rủi ro? Bởi vì mức độ ảnh hưởng và phụ thuộc của các bảng với nhau tạo nên sự nhất quán về dữ liệu. Nếu một bảng nào thiếu, không đúng về thông tin đều có thể gây ra sai lệch về dữ liệu của đơn hàng - khách hàng. Ngoài ra còn cần đảm bảo kiểu dữ liệu vì có thể các bảng có kiểu dữ liệu khác nhau nên đòi hỏi tính chính xác cao hơn.
-2. **Ví dụ thực tế:** Nếu bảng `Availability` được ghi vào DB thành công nhưng bước tạo `Order` ngay sau đó bị lỗi, hậu quả là các slot bánh bị trừ nhưng thực tế đơn hàng chưa được tạo — tạo nên sự sai lệch về tính an toàn nguyên tử (Partial Commit). Nếu tình trạng này được nhân lên nhiều lần sẽ tạo nên sự hao hụt về tiền bạc (khách thấy hết bánh) và làm cho quản trị viên thấy bối rối, tác động xấu đến trải nghiệm người dùng cả admin lẫn client.
-3. Trên thực tế, việc tạo thủ công từng bảng là có thể được nhưng nó chỉ phù hợp nếu tất cả các bước tạo luôn đảm bảo là thành công. Nếu một bước nào đó sai, chúng ta phải dọn dẹp lại (orphan record) một lần nữa và việc đó không hề tối ưu. Cách ở đây là bọc tất cả việc tạo trên vào một transaction để đảm bảo rằng tất cả thông tin đều được ghi vào bảng đồng nhất và nhất quán.
+**Ngày viết:** [25/09/2026] **Trạng thái:** [Đã áp dụng]
 
 ---
 
-## 2. Options Considered
+### 1. Bối cảnh
 
-### Phương án A: Thực hiện các câu lệnh riêng lẻ, ghi từng bảng độc lập
-* **Ưu điểm:** Dễ thực hiện.
-* **Nhược điểm:** Nếu có bước nào không thành công sẽ tạo orphan record và phải dọn dẹp nó nếu muốn data nhất quán.
-* **Vì sao không chọn:** Tạo thêm bước dọn dẹp cho hệ thống và rủi ro lớn nếu các thông tin sai lệch không được dọn dẹp triệt để.
+1. **Bài toán này khác gì so với ADR-001 (chỉ 1 bảng Availability)?**
+2. **Kịch bản cụ thể nào cho thấy nếu KHÔNG xử lý đúng, hệ thống sẽ hỏng ra sao?**
+3. **Vì sao vấn đề này không thể giải quyết bằng cách ghi từng bảng một cách độc lập, kiểm tra lỗi thủ công sau mỗi bước?**
 
-### Phương án B: Bọc toàn bộ DB transaction và Redis hold key vào một transaction
-* **Ưu điểm:** Đảm bảo bài toán lúc đầu yêu cầu và code nhìn trực quan hơn.
-* **Nhược điểm:** Không đảm bảo được phần Redis hold key sẽ hoạt động cùng với các tác vụ trong transaction. Bởi vì Redis và DB transaction hoạt động ở 2 tầng khác nhau. Việc bọc Redis vào transaction không có nghĩa, không đảm bảo được mong muốn là "nếu 1 cái fail thì tất cả cùng fail".
-* **Vì sao không chọn:** Không mang lại tính nguyên tố cross-system thật sự và dễ gây hiểu nhầm về ranh giới an toàn của transaction.
+Trả lời:
 
-### Phương án C: Dùng DB transaction để thực hiện chung các câu lệnh DB, tách Redis hold key ra ngoài
-* **Ưu điểm:** Đảm bảo được tất cả nhu cầu về an toàn dữ liệu 100% trong DB.
-* **Nhược điểm:** Code phức tạp hơn.
-* **Vì sao chọn:** Đáp ứng đúng ranh giới của từng hệ thống, tôn trọng PostgreSQL là Single Source of Truth.
+1.
 
----
+Khi bấm đặt hàng thì các bảng data liên quan như: order, address, order items, user, availability sẽ được tạo mới cùng lúc với những thông tin tương ứng.
 
-## 3. Decision
+Việc ghi vào nhiều bảng cùng lúc tại sao lại tạo ra những rủi ro? Bởi vì mức độ ảnh hưởng và phụ thuộc của các bảng với nhau tạo nên sự nhất quán về dữ liệu. Nếu một bảng nào thiếu hoặc không đúng về thông tin đều có thể gây ra sai lệch về dữ liệu của đơn hàng và khách hàng.
 
-Tôi đã chọn **Phương án C**: Dùng DB transaction (`$transaction`) để thực hiện chung các câu lệnh, đảm bảo các thao tác ghi vào các bảng liên quan cùng được ghi vào một lúc. Chắc chắn rằng nếu một thao tác ghi vào bảng nào đó xảy ra lỗi thì tất cả thao tác đã thực hiện và chưa thực hiện sẽ được rollback hoàn toàn.
+Ngoài ra còn cần đảm bảo kiểu dữ liệu vì có thể các bảng có kiểu dữ liệu khác nhau nên đòi hỏi tính chính xác cao hơn.
 
-Đồng thời, để câu lệnh Redis hold key ở BÊN NGOÀI transaction bởi vì DB và Redis hoạt động ở 2 tầng khác nhau. Nếu transaction thành công nhưng bước Redis fail thì đơn hàng vẫn được tạo bình thường trong DB. 
+2.
 
-Ở đây, DB là nguồn sự thật (Single Source of Truth) và Redis là lớp hỗ trợ tạm thời nên việc dù Redis có fail thì hệ thống vẫn đọc được thông tin thật từ DB. Tuy nhiên, dữ liệu DB lưu trên đĩa cứng (SSD) còn Redis nằm trên RAM nên tốc độ truy cập rất khác nhau. Việc hệ thống phải liên tục gọi vào DB để xem thời gian đặt hàng nhằm tính lại thời gian còn lại thanh toán (10 phút) là rất lớn. Nếu mỗi giây gọi vào DB 1 lần cho 1 user thì cần 600 lượt query; với $N$ user cùng lúc sẽ là $600 \times N$ lượt query — tạo sức nặng lớn cho server và không đảm bảo thời gian phản hồi chính xác cho client. Vì vậy, Redis hold key đóng vai trò là lớp Cache/Timer tra cứu nhanh $O(1)$ phía trước.
+Ví dụ thực tế nếu bảng Availability được ghi vào DB thành công nhưng bước tạo order ngay sau đó bị lỗi thì hậu quả là các slot bánh bị trừ nhưng thực tế đơn hàng chưa được tạo.
 
----
+Đây là vi phạm tính nguyên tử của giao dịch.
 
-## 4. Trade-offs & Limitations
+Nếu lặp lại nhiều lần, hệ thống sẽ hiển thị sai là đã hết hàng dù chưa bán được, gây hao hụt doanh thu thực sự. Ngoài ra còn làm cho quản trị viên thấy bối rối và tác động xấu đến trải nghiệm người dùng của cả admin lẫn khách hàng.
 
-* **Hiểu nhầm ban đầu về ranh giới Redis:** Bản thân từng đặt `setHold` bên trong transaction với mong muốn nếu Redis fail thì DB transaction cũng rollback. Nhưng sau khi tìm hiểu lại về kiến trúc tầng của DB và Redis, tôi đã nhận ra điểm chưa chính xác này và tách Redis ra ngoài.
-* **Thời hạn thanh toán 10 phút:** Đối với các đơn chọn chuyển khoản (`BANK_TRANSFER`), đơn hàng chỉ được giữ trong 10 phút. Để giải quyết việc dọn dẹp các đơn quá hạn khi thiếu Redis key, tôi sử dụng cơ chế bù đắp (Reconciliation) là **Cron Job** quét các đơn có trạng thái `NEW`. Định kỳ Cron Job quét DB, so sánh `createdAt` với thời gian hiện tại, nếu quá 10 phút sẽ chuyển trạng thái từ `NEW` sang `CANCELLED` và trả lại slot bánh.
-* **Phát hiện khi Pseudocode:** Việc nhận ra sự khác biệt của Redis hold key là phát hiện lớn nhất của tôi trong quá trình thử sức pseudo lại hàm `createOrder`.
+3.
+
+Trên thực tế việc tạo thủ công từng bảng vẫn có thể thực hiện được, nhưng chỉ phù hợp nếu tất cả các bước tạo luôn đảm bảo thành công.
+
+Nếu một bước nào đó sai, chúng ta phải tự dọn dẹp các bản ghi mồ côi (orphan record) phát sinh và việc đó không hề tối ưu.
+
+Cách ở đây là bọc tất cả việc tạo vào một transaction để đảm bảo rằng tất cả thông tin đều được ghi vào các bảng một cách đồng nhất và nhất quán.
 
 ---
 
-## 5. What I'd do differently
+### 2. Các phương án cân nhắc
 
-* **Hệ thống hóa kịch bản lỗi:** Nếu được làm lại, tôi sẽ hệ thống hóa tất cả hậu quả có thể diễn ra để xử lý và thông báo lỗi chi tiết hơn. Đặc biệt là việc nếu Redis hold key fail nhưng DB transaction vẫn báo "xanh" và hoạt động bình thường, khiến người viết không nhận ra điểm chưa tối ưu nếu không test kỹ.
-* **Tái cấu trúc hàm `createOrder`:** Hàm `createOrder` hiện tại khá dài và chứa nhiều logic (user, address, price, slot, status, event, redis). Nếu làm lại, tôi sẽ tách nhỏ và mô-đun hóa tốt hơn để giảm độ phức tạp và dễ bảo trì hơn.
+| **Phương án** | **Ưu điểm** | **Nhược điểm** | **Vì sao không chọn** |
+|--------------|-------------|---------------|----------------------|
+| A: Thực hiện các câu lệnh riêng lẻ, ghi từng bảng độc lập | Dễ thực hiện | Nếu có bước nào không thành công sẽ tạo orphan record và phải dọn dẹp nếu muốn dữ liệu nhất quán | Phát sinh thêm bước dọn dẹp thủ công và rủi ro nếu dữ liệu sai lệch không được xử lý kịp thời. |
+| B: Bọc toàn bộ DB transaction và Redis hold key vào một transaction | Đáp ứng đúng yêu cầu ban đầu (mọi thứ cùng thành công hoặc cùng thất bại), code trông gọn hơn | Không đảm bảo được phần Redis hold key sẽ hoạt động cùng với các tác vụ trong transaction | Vì Redis và DB transaction hoạt động ở hai tầng khác nhau. Việc bọc Redis vào transaction là vô nghĩa vì Redis không tham gia được cơ chế rollback của DB. |
+| C: Dùng DB transaction để thực hiện chung các câu lệnh, tách Redis hold key ra ngoài | Đảm bảo được tất cả nhu cầu mà chúng ta đặt ra | Code phức tạp hơn | |
+
+---
+
+### 3. Quyết định
+
+Tôi đã chọn phương án dùng DB transaction để gộp chung các câu lệnh ghi, đảm bảo các thao tác ghi vào các bảng liên quan cùng được ghi vào một lúc.
+
+Chắc chắn rằng nếu một thao tác ghi vào bảng nào đó xảy ra lỗi thì tất cả thao tác đã thực hiện và chưa thực hiện sẽ được rollback, quá trình dừng lại ngay tại đó.
+
+Đồng thời tôi để Redis hold key ở bên ngoài transaction bởi vì DB và Redis hoạt động ở hai tầng khác nhau. Vì vậy nếu transaction thành công nhưng Redis fail sau đó thì đơn hàng vẫn được tạo vì lỗi Redis không nên làm dừng transaction.
+
+a) Vì sao tách Redis ra khỏi transaction:
+
+Ở đây tôi xem DB là nguồn sự thật (source of truth) còn Redis chỉ là lớp hỗ trợ tạm thời. Vì vậy nếu Redis gặp lỗi thì dữ liệu nghiệp vụ chính vẫn đúng trong DB.
+
+Ngoài ra Redis không có khả năng tham gia vào cơ chế rollback của DB transaction.
+
+b) Vì sao dùng Redis để giữ hold thay vì query DB liên tục (lý do hiệu năng):
+
+Chúng ta nên nhớ dữ liệu DB được đọc từ ổ đĩa (SSD/HDD), trong khi dữ liệu Redis nằm trong RAM. Vì vậy tốc độ truy cập khác nhau đáng kể.
+
+Nếu hệ thống liên tục query DB để tính toán thời gian thanh toán còn lại của đơn hàng (10 phút) thì query cost sẽ lớn hơn rất nhiều, đặc biệt khi có nhiều người dùng đặt hàng cùng lúc.
+
+Đây là lý do Redis được chọn làm lớp giữ trạng thái tạm thời ngay từ đầu và quyết định này không liên quan đến rollback.
+
+---
+
+### 4. Đánh đổi và giới hạn
+
+- Ban đầu tôi từng định đặt Redis hold key bên trong transaction với kỳ vọng rằng nếu Redis fail thì transaction cũng rollback theo. Tuy nhiên sau khi đọc lại và tìm hiểu thêm về cách DB và Redis hoạt động, tôi nhận ra cách tiếp cận đó là sai và chuyển sang giải pháp hiện tại.
+- Với đơn thanh toán chuyển khoản, hold slot chỉ tồn tại trong 10 phút. Để dọn các đơn quá hạn, tôi dùng cơ chế bù đắp: một cron job quét các đơn có status 'NEW' đã quá thời gian thanh toán, so sánh thời gian đặt hàng với thời gian hiện tại rồi chuyển sang 'CANCELLED' với lý do 'thanh toán hết hạn'.
+- Trong lúc viết lại pseudocode cho hàm createOrder, điều lớn nhất tôi nhận ra là redis-hold-key không nên nằm trong try-catch dùng để xử lý lỗi Redis.
+
+---
+
+### 5. Những điều tôi sẽ làm khác đi
+
+Nếu được làm lại, tôi sẽ hệ thống lại tất cả hậu quả có thể xảy ra để có thể xử lý và thông báo lỗi chi tiết hơn.
+
+Điển hình là trường hợp Redis hold key bị lỗi nhưng DB transaction vẫn thành công. Điều này khiến tôi nhận ra rằng mình đã bỏ sót một lỗi tiềm ẩn.
+
+Ngoài ra hàm createOrder hiện cũng đang khá dài và phức tạp. Nếu làm lại, tôi sẽ tổ chức nó tốt hơn vì ngay cả khi viết lại pseudocode, tôi cũng phải tự nhắc mình nhiều lần mới nhớ đủ các bước cần thiết.

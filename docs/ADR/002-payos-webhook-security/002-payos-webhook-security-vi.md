@@ -5,7 +5,7 @@
 
 ---
 
-## 1. Context (Bối cảnh)
+## 1. Bối cảnh
 
 Bài toán xuất hiện trong quá trình lấy thông tin từ webhook của PayOS gửi về. Vấn đề là hệ thống không có cách nào xác minh dữ liệu webhook nhận về thực sự đến từ PayOS, hay do ai đó giả mạo.
 
@@ -17,7 +17,7 @@ Việc thông tin từ webhook không được xác thực sẽ tạo ra nhiều
 
 ---
 
-## 2. Options Considered
+## 2. Các phương án cân nhắc
 
 | Phương án | Ưu điểm | Nhược điểm | Vì sao không chọn |
 |---|---|---|---|
@@ -27,7 +27,7 @@ Việc thông tin từ webhook không được xác thực sẽ tạo ra nhiều
 
 ---
 
-## 3. Decision (Quyết định)
+## 3. Quyết định
 
 Cuối cùng tôi đã chọn phương án sử dụng SDK của PayOS verify chữ ký mà chỉ hệ thống của tôi và PayOS biết. Đồng thời bọc các verify sau trong transaction: kiểm tra duplicated, so sánh số tiền đã thanh toán từ webhook và số tiền thực tế phải thanh toán ở đơn hàng, kiểm tra xem status đơn hàng xem có phải đang check lại một đơn hàng đã xử lý rồi hay không.
 
@@ -90,7 +90,7 @@ sequenceDiagram
 
 ---
 
-## 4. Trade-offs & Limitations (Đánh đổi và giới hạn)
+## 4. Đánh đổi và giới hạn
 
 - **Độ chính xác của tiền tệ:** Phân tích hạn chế về kiểu dữ liệu của Number và hướng giải quyết chuẩn hóa.
 - **Ở tình huống nào hệ thống chắc chắn sẽ "gãy":** Khi PayOS gửi retry webhook 2 request gần như là đồng nhất, thì hệ thống chưa xử lý được: nếu request thứ hai đến trước khi transaction của request đầu commit xong, vẫn có thể xảy ra xử lý trùng lặp. Dù có unique constraint chặn ở tầng DB, nhưng chưa có row-level lock ngay khi request đầu tiên bắt đầu transaction — nên vẫn tồn tại khoảng hở thời gian trước khi constraint được kiểm tra.
@@ -99,7 +99,7 @@ sequenceDiagram
 
 ---
 
-## 5. What I'd do differently
+## 5. Những điều tôi sẽ làm khác đi
 
 - Nếu được làm lại tôi sẽ kiểm tra kỹ hơn về độ chính xác của tiền tệ.
 - Khi được làm lại tôi sẽ có nhiều thời gian hơn để tìm học hỏi về Outbox Pattern để không một event nào bị bỏ sót.

@@ -12,7 +12,36 @@ The technical part was where the real challenge was. We had to handle the kinds 
 
 **[piacoloan.info](https://www.piacoloan.info)** — currently live and serving real customers.
 
+## Production
+
+**[piacoloan.info](https://www.piacoloan.info)** — currently live and serving real customers.
+
 > Available from **August 19** to **October 19, 2026** (seasonal operation, aligned with Mid-Autumn Festival demand).
+
+## Real-world Results (One Month — Mid-Autumn 2026)
+
+The system handled a full month of live seasonal sales (Aug 26 – Sep 29, 2026):
+
+| Metric | Value |
+|---|---|
+| Total orders | 109 |
+| Revenue | ~89.4M VND |
+| Order completion rate | 82.6% (90/109) |
+| Order cancellation rate | 10% (11/109) |
+| Average order value | ~820K VND |
+| Traffic | 344 visits (72% mobile, 26% desktop) |
+| Fulfillment split | 93% pickup, 7% delivery |
+
+Cancellation breakdown: customer request (5), payment expired (2), other (2),
+out of stock (1), duplicate order (1) — the automatic cron-job cancellation
+(see [ADR-003](./docs/ADR/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md))
+correctly caught the `PAYMENT_EXPIRED` cases without affecting already-paid orders.
+
+> Note: the 3% overbooking buffer (see [ADR-001](./docs/ADR/001-concurrency-control/001-concurrency-control-vi.md))
+> was never actually triggered this season — real traffic never reached the point
+> of contention it was designed for. The mechanism has been verified through
+> simulated concurrent-request testing, not yet by live traffic at that scale.
+
 
 ## Highlights
 
@@ -83,6 +112,7 @@ Full write-ups in [`docs/ADR/`](./docs/ADR):
 |-----|----------------------------|------------------------------------------|-------------------------------------------------------------------------------------------------|
 | 001 | Concurrent double-booking  | Pessimistic locking + overbooking buffer | [VI](./docs/ADR/001-concurrency-control/001-concurrency-control-vi.md) · [EN](./docs/ADR/001-concurrency-control/001-concurrency-control-en.md) |
 | 002 | PayOS webhook security     | Signature verification + idempotent processing | [VI](./docs/ADR/002-payos-webhook-security/002-payos-webhook-security-vi.md) · [EN](./docs/ADR/002-payos-webhook-security/002-payos-webhook-security-en.md) |
+| 003 | Atomic multi-entity order creation | DB transaction wraps writes, Redis hold kept outside | [VI](./docs/ADR/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md) · [EN](./docs/ADR/003-atomic-multi-entity-order/003-atomic-multi-entity-order-en.md) |
 
 
 

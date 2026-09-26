@@ -104,4 +104,5 @@ sequenceDiagram
 
 ## 5. What I'd Do Differently
 
-If I were to do it again, I would write an integration test to simulate 2 concurrent requests (using `Promise.all` to call the API twice at the same time) to automatically verify that the race condition is actually prevented, rather than relying only on the theory behind `SELECT FOR UPDATE`.
+- If I were to do it again, I would write an integration test to simulate 2 concurrent requests (using `Promise.all` to call the API twice at the same time) to automatically verify that the race condition is actually prevented, rather than relying only on the theory behind `SELECT FOR UPDATE`.
+- After one month in production, the overbooking buffer branch has not been triggered because traffic has not been high enough to reach the configured threshold. The mechanism has been verified through simulated tests, but it has not yet been validated by real production traffic.

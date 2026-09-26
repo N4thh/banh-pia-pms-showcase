@@ -5,7 +5,7 @@
 
 ---
 
-## 1. Context (Bối cảnh)
+## 1. Bối cảnh
 
 Làm sao đảm bảo dữ liệu hệ thống vẫn chính xác khi nhiều client cùng đọc/ghi gần như đồng thời? Tại vì chỉ cách một vài ms khi cả 2 client A và B cùng bấm đặt tại một thời điểm gần như đồng nhất thì dữ liệu đọc vào có thể tạo ra sự khác biệt.
 
@@ -19,7 +19,7 @@ Trả lời:
 
 ---
 
-## 2. Options Considered
+## 2. Các phương án cân nhắc
 
 | Phương án | Ưu điểm | Nhược điểm | Vì sao không chọn |
 |------------|----------|----------|----------|
@@ -29,7 +29,7 @@ Trả lời:
 
 ---
 
-## 3. Decision (Quyết định)
+## 3. Quyết định
 
 Đã chọn: Bọc thao tác đọc–kiểm tra–ghi trong một transaction và sử dụng Pessimistic locking - Select FOR UPDATE
 
@@ -92,7 +92,7 @@ sequenceDiagram
 
 ---
 
-## 4. Trade-offs & Limitations (Đánh đổi và giới hạn)
+## 4. Đánh đổi và giới hạn
 
 - Đánh đổi chính là độ trễ nhỏ (vài ms đến vài trăm ms) ở phía client B để đổi lấy đảm bảo tuyệt đối không double-booking — chấp nhận được vì tần suất trùng thời điểm đặt bánh là hiếm.
 - Với điều kiện mà tiệm bánh có 2 loại bánh trở lên thì cách triển khai trên sẽ gãy hoàn toàn bởi vì mỗi phiên đều được bọc trong một transaction - đảm bảo các thao tác bên trong đều chạy thì nó mới được thực thi. Nhưng với việc bảo toàn khối lượng cho 2 hoặc nhiều loại bánh - có khối lượng khác nhau, sẽ có thể tạo nên một vòng chờ vô hạn request này chờ request kia.
@@ -100,6 +100,7 @@ sequenceDiagram
 
 ---
 
-## 5. What I'd do differently
+## 5. Những điều tôi sẽ làm khác đi
 
-Nếu làm lại, tôi sẽ viết integration test giả lập 2 request đồng thời (dùng Promise.all gọi 2 lần API cùng lúc) để tự động verify race condition đã thực sự được chặn, thay vì chỉ tin vào lý thuyết của SELECT FOR UPDATE.
+- Nếu làm lại, tôi sẽ viết integration test giả lập 2 request đồng thời (dùng Promise.all gọi 2 lần API cùng lúc) để tự động verify race condition đã thực sự được chặn, thay vì chỉ tin vào lý thuyết của SELECT FOR UPDATE.
+- Qua 1 tháng vận hành thật, nhánh overbooking buffer chưa từng được kích hoạt (traffic chưa đủ lớn để chạm ngưỡng) — cơ chế mới được xác minh qua test giả lập, chưa qua production traffic thật
