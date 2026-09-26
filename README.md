@@ -12,10 +12,6 @@ The technical part was where the real challenge was. We had to handle the kinds 
 
 **[piacoloan.info](https://www.piacoloan.info)** — currently live and serving real customers.
 
-## Production
-
-**[piacoloan.info](https://www.piacoloan.info)** — currently live and serving real customers.
-
 > Available from **August 19** to **October 19, 2026** (seasonal operation, aligned with Mid-Autumn Festival demand).
 
 ## Real-world Results (One Month — Mid-Autumn 2026)
