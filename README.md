@@ -111,8 +111,6 @@ Full write-ups in [`docs/ADR/`](./docs/ADR):
 | 003 | Atomic multi-entity order creation | DB transaction wraps writes, Redis hold kept outside | [VI](./docs/ADR/records/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md) · [EN](./docs/ADR/records/003-atomic-multi-entity-order/003-atomic-multi-entity-order-en.md) |
 | 004 | Order cancellation concurrency | Pessimistic locking in a shared transaction | [VI](./docs/ADR/records/004-order-cancellation-concurrency-control/004-order-cancellation-concurrency-control-vi.md) · [EN](./docs/ADR/records/004-order-cancellation-concurrency-control/004-order-cancellation-concurrency-control-en.md) |
 | 005 | Duplicate order requests | Hashed order fields as a Redis idempotency key with a 10-minute TTL | [VI](./docs/ADR/records/005-idempotency-key-design/005-idempotency-key-design-vi.md) · [EN](./docs/ADR/records/005-idempotency-key-design/005-idempotency-key-design-en.md) |
-| 006 | Daily production capacity limits | Soft limit and hard limit with a 3% buffer | [EN](./docs/ADR/records/006-capacity-policy/006-capacity-policy-en.md) |
-
 
 
 ## Tech Stack
