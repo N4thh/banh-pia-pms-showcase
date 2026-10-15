@@ -30,10 +30,10 @@ The system handled a full month of live seasonal sales (Aug 26 – Sep 29, 2026)
 
 Cancellation breakdown: customer request (5), payment expired (2), other (2),
 out of stock (1), duplicate order (1) — the automatic cron-job cancellation
-(see [ADR-003](./docs/ADR/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md))
+(see [ADR-003](./docs/ADR/records/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md))
 correctly caught the `PAYMENT_EXPIRED` cases without affecting already-paid orders.
 
-> Note: the 3% overbooking buffer (see [ADR-001](./docs/ADR/001-concurrency-control/001-concurrency-control-vi.md))
+> Note: the 3% overbooking buffer (see [ADR-001](./docs/ADR/records/001-concurrency-control/001-concurrency-control-vi.md))
 > was never actually triggered this season — real traffic never reached the point
 > of contention it was designed for. The mechanism has been verified through
 > simulated concurrent-request testing, not yet by live traffic at that scale.
@@ -106,11 +106,12 @@ Full write-ups in [`docs/ADR/`](./docs/ADR):
 
 | ADR |          Problem           |                  Decision                |                                              Docs                                               |
 |-----|----------------------------|------------------------------------------|-------------------------------------------------------------------------------------------------|
-| 001 | Concurrent double-booking  | Pessimistic locking + overbooking buffer | [VI](./docs/ADR/001-concurrency-control/001-concurrency-control-vi.md) · [EN](./docs/ADR/001-concurrency-control/001-concurrency-control-en.md) |
-| 002 | PayOS webhook security     | Signature verification + idempotent processing | [VI](./docs/ADR/002-payos-webhook-security/002-payos-webhook-security-vi.md) · [EN](./docs/ADR/002-payos-webhook-security/002-payos-webhook-security-en.md) |
-| 003 | Atomic multi-entity order creation | DB transaction wraps writes, Redis hold kept outside | [VI](./docs/ADR/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md) · [EN](./docs/ADR/003-atomic-multi-entity-order/003-atomic-multi-entity-order-en.md) |
-| 004 | Order cancellation concurrency | Pessimistic locking in a shared transaction | [VI](./docs/ADR/004-order-cancellation-concurrency-control/004-order-cancellation-concurrency-control-vi.md) · [EN](./docs/ADR/004-order-cancellation-concurrency-control/004-order-cancellation-concurrency-control-en.md) |
-| 005 | Duplicate order requests | Hashed order fields as a Redis idempotency key with a 10-minute TTL | [VI](./docs/ADR/005-idempotency-key-design/005-idempotency-key-design-vi.md) · [EN](./docs/ADR/005-idempotency-key-design/005-idempotency-key-design-en.md) |
+| 001 | Concurrent double-booking  | Pessimistic locking + overbooking buffer | [VI](./docs/ADR/records/001-concurrency-control/001-concurrency-control-vi.md) · [EN](./docs/ADR/records/001-concurrency-control/001-concurrency-control-en.md) |
+| 002 | PayOS webhook security     | Signature verification + idempotent processing | [VI](./docs/ADR/records/002-payos-webhook-security/002-payos-webhook-security-vi.md) · [EN](./docs/ADR/records/002-payos-webhook-security/002-payos-webhook-security-en.md) |
+| 003 | Atomic multi-entity order creation | DB transaction wraps writes, Redis hold kept outside | [VI](./docs/ADR/records/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md) · [EN](./docs/ADR/records/003-atomic-multi-entity-order/003-atomic-multi-entity-order-en.md) |
+| 004 | Order cancellation concurrency | Pessimistic locking in a shared transaction | [VI](./docs/ADR/records/004-order-cancellation-concurrency-control/004-order-cancellation-concurrency-control-vi.md) · [EN](./docs/ADR/records/004-order-cancellation-concurrency-control/004-order-cancellation-concurrency-control-en.md) |
+| 005 | Duplicate order requests | Hashed order fields as a Redis idempotency key with a 10-minute TTL | [VI](./docs/ADR/records/005-idempotency-key-design/005-idempotency-key-design-vi.md) · [EN](./docs/ADR/records/005-idempotency-key-design/005-idempotency-key-design-en.md) |
+| 006 | Daily production capacity limits | Soft limit and hard limit with a 3% buffer | [EN](./docs/ADR/records/006-capacity-policy/006-capacity-policy-en.md) |
 
 
 
