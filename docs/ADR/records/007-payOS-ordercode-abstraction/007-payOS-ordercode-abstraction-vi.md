@@ -53,7 +53,7 @@ Lý do là công dụng của từng trường dữ liệu sẽ rõ ràng, mỗi
 5. Nếu một trong hai bước này bị lỗi thì trả lỗi 500.
 
 **Khi PayOS gửi webhook:**
-Hệ thống dùng trường `orderId` trong dữ liệu webhook để tìm ra đơn, thông qua bảng `Order`.
+Hệ thống dùng `payosOrderCode` trong dữ liệu webhook để tìm bản ghi `PaymentLink`, từ đó tìm ra đơn tương ứng.
 
 ---
 
@@ -66,7 +66,7 @@ Hệ thống dùng trường `orderId` trong dữ liệu webhook để tìm ra �
 
 **Giới hạn / điểm chưa đồng bộ trong codebase hiện tại:**
 
-- Hiện tại hệ thống chỉ hủy link thanh toán ở phía hệ thống, chưa hủy ở phía PayOS, nên nếu khách vẫn thanh toán vào link đó thì hệ thống sẽ xử lý sai, dù đơn đã được thanh toán.
+- Hiện tại khi hủy đơn, hệ thống chỉ hủy mềm đơn (chuyển trạng thái thành CANCELLED) mà không đụng tới `PaymentLink`, nên link thanh toán vẫn tồn tại, cả ở phía hệ thống lẫn phía PayOS. Nếu khách vẫn thanh toán vào link đó thì hệ thống sẽ xử lý sai, dù đơn đã được thanh toán.
 - Việc sinh ngẫu nhiên từ 100.000.000 đến 999.999.999 vẫn có khả năng trùng mã, và hệ thống chưa có phần kiểm tra việc này.
 
 ---

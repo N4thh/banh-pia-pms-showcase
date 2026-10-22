@@ -53,7 +53,7 @@ The reason is that the purpose of each data field becomes clear, and each field 
 5. If one of these two steps fails, return a 500 error.
 
 **When PayOS sends a webhook:**
-The system uses the `orderId` field in the webhook data to find the order, through the `Order` table.
+The system uses the `payosOrderCode` in the webhook data to find the `PaymentLink` record, and from it finds the matching order.
 
 ---
 
@@ -66,7 +66,7 @@ The system uses the `orderId` field in the webhook data to find the order, throu
 
 **Limitations / inconsistencies in the current codebase:**
 
-- At the moment, the system only cancels the payment link on its own side and does not cancel it on the PayOS side, so if a customer still pays through that link, the system will handle it incorrectly, even though the order has been paid.
+- At the moment, when an order is cancelled, the system only does a soft cancel of the order (changing its status to CANCELLED) and does not touch `PaymentLink`, so the payment link still exists, both on the system side and on the PayOS side. If a customer still pays through that link, the system will handle it incorrectly, even though the order has been paid.
 - The random generation from 100,000,000 to 999,999,999 can still produce the same code twice, and the system does not have a check for this yet.
 
 ---
