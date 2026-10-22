@@ -75,7 +75,7 @@ Nếu hệ thống liên tục query DB để tính toán thời gian thanh toá
 ### 4. Đánh đổi và giới hạn
 
 - Ban đầu tôi từng định đặt Redis hold key bên trong transaction với kỳ vọng rằng nếu Redis fail thì transaction cũng rollback theo. Tuy nhiên sau khi đọc lại và tìm hiểu thêm về cách DB và Redis hoạt động, tôi nhận ra cách tiếp cận đó là sai và chuyển sang giải pháp hiện tại.
-- Với đơn thanh toán chuyển khoản, hold slot chỉ tồn tại trong 10 phút. Để dọn các đơn quá hạn, tôi dùng cơ chế bù đắp: một cron job quét các đơn có status 'NEW' đã quá thời gian thanh toán, so sánh thời gian đặt hàng với thời gian hiện tại rồi chuyển sang 'CANCELLED' với lý do 'thanh toán hết hạn'.
+- Với đơn thanh toán chuyển khoản, hold slot chỉ tồn tại trong 10 phút. Để dọn các đơn quá hạn, tôi dùng cơ chế bù đắp: khi đơn được tạo, hệ thống thêm một job trì hoãn 10 phút vào BullMQ. Khi job đến hạn, worker kiểm tra đơn; nếu đơn vẫn có status 'NEW' thì chuyển sang 'CANCELLED' với lý do 'thanh toán hết hạn'.
 - Trong lúc viết lại pseudocode cho hàm createOrder, điều lớn nhất tôi nhận ra là redis-hold-key không nên nằm trong try-catch dùng để xử lý lỗi Redis.
 
 ---

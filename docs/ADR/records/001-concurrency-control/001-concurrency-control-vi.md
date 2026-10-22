@@ -14,7 +14,7 @@ Ví dụ thực tế khi hệ thống còn 1 slot bánh duy nhất và client A 
 Trả lời:
 
 - Chúng ta cần đảm bảo tại một thời điểm chỉ có một người được đọc và ghi vào dữ liệu của hệ thống. Nên tôi đã quyết định sử dụng pessimistic locking cho tình huống này.
-- Đồng thời kết hợp với over-booking tạo thêm một bufferLimit = maxQuantity + 3% * maxQuantity (softLimit) - tổng số lượng bánh mà admin nhập vào mỗi ngày. Để nới lỏng độ cứng nhắc của hệ thống, đồng thời tăng trải nghiệm người dùng đồng thời có thể tạo ra một khoảng doanh thu nhỏ từ 3% này. Vì sao là 3%, vì đây là mức rủi ro over-sell tối đa mà tiệm bánh vẫn xử lý bù được bằng tay.
+- Đồng thời kết hợp với over-booking tạo thêm một bufferLimit = maxCapacity + 3% * maxCapacity (giới hạn cứng) - tổng số lượng bánh mà admin nhập vào mỗi ngày. Để nới lỏng độ cứng nhắc của hệ thống, đồng thời tăng trải nghiệm người dùng đồng thời có thể tạo ra một khoảng doanh thu nhỏ từ 3% này. Vì sao là 3%, vì đây là mức rủi ro over-sell tối đa mà tiệm bánh vẫn xử lý bù được bằng tay.
 - Chống hoàn toàn over-booking nếu số lượng đặt bánh > bufferLimit sẽ bị reject ngay
 
 ---

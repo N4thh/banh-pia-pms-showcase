@@ -16,7 +16,7 @@ For example, when the system has only 1 cake slot remaining and Client A is the 
 ### Answer:
 
 - We need to ensure that, at any given time, only one client can read and write the relevant system data. Therefore, I decided to use **pessimistic locking** for this situation.
-- At the same time, we combine this with **over-booking** by adding a `bufferLimit = maxQuantity + 3% * maxQuantity` (`softLimit`) - the total number of cakes entered by the admin each day. This helps make the system less rigid, improve the user experience, and potentially generate a small amount of additional revenue from this 3% buffer. Why 3%? Because this is the maximum over-sell risk that the bakery can still handle manually.
+- At the same time, we combine this with **over-booking** by adding a `bufferLimit = maxCapacity + 3% * maxCapacity` (`hard limit`) - the total number of cakes entered by the admin each day. This helps make the system less rigid, improve the user experience, and potentially generate a small amount of additional revenue from this 3% buffer. Why 3%? Because this is the maximum over-sell risk that the bakery can still handle manually.
 - Completely prevent over-booking by rejecting the order immediately if the booking quantity exceeds `bufferLimit`.
 
 ---
