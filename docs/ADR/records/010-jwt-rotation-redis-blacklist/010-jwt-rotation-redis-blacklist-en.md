@@ -43,13 +43,13 @@ Tokens are stored in `localStorage`, and the repo has no CSP or security header 
 
 About login and authorization: the login route has no limit on password attempts; `MinLength(6)` in `AdminDto` is not enforced because this route has no `ValidationPipe`; and `AdminGuard` lets a request pass when an endpoint has no `IS_ADMIN_KEY`, so access control depends on whether each route is marked.
 
-During an authorization review, I found that three cake routes and `/availability/book` had no effective guard: putting a guard in a service does not protect its routes. I moved the guard to the affected routes. Initially, 12 of the 14 test cases failed; after the fix, all 14 passed.
+During a review of the route list, I found that `POST /cakes`, `PATCH /cakes/:id`, `DELETE /cakes/:id` and `POST /availability/book` had no effective guard. The guards for the cake routes had been placed on the `CakesService` class, and a test showed that this has no effect: a request without a token was accepted. I added `JwtBlacklistGruard`, `AdminGuard` and `@IsAdmin()` to these four routes. `POST /availability/book` has no HTTP caller (only `BookingService` calls `bookSlot`), so no existing flow was changed. The new test file covers the three cake routes: before the fix, 12 of 14 cases failed; after the fix, all 14 passed. `POST /availability/book` has no test of its own. The decorators on `CakesService` are still in the code, and `POST /availability/hold` still has no guard.
 
-The tests still only have `should be defined` for `AuthService`, `AuthController` and `RedisService`. `JwtBlacklistGruard` is tested with a public handler, a request with no token (`401`), a wrong role (`403`), and a blacklisted token (`401`). There is no test for login, refresh, logout or Redis errors.
+`AuthService`, `AuthController` and `RedisService` only have `should be defined` tests. `JwtBlacklistGruard` has one test for a public handler, and it is tested through the cake routes with no token (`401`), a wrong role (`403`) and a blacklisted token (`401`). There is no test for login, refresh, logout or Redis errors.
 
 ## 5. What I'd do differently
 
-The guard-placement issue noted in section 4 has been fixed. The directions below have not been implemented in the code.
+The guard-placement issue on the four routes noted in section 4 has been fixed. The directions below have not been implemented in the code.
 
 1. **The old AT still works after a refresh.** Send the AT with the refresh request, or read the `jti` of the AT from the `Authorization` header, and add that `jti` to the blacklist together with the old RT. The change is in the `/auth/refresh` endpoint and `AuthService`. The cost is one more Redis write for each refresh.
 

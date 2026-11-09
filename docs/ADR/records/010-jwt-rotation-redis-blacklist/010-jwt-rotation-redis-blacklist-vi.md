@@ -43,13 +43,13 @@ Token lưu ở `localStorage` và repo chưa có cấu hình CSP hay header bả
 
 Về đăng nhập và phân quyền: route đăng nhập không giới hạn số lần thử mật khẩu; `MinLength(6)` của `AdminDto` chưa được thực thi vì không có `ValidationPipe` trên route này; và `AdminGuard` cho qua khi endpoint thiếu `IS_ADMIN_KEY`, nên quyền phụ thuộc vào việc từng route có được gắn cờ hay không.
 
-Trong lúc rà soát phân quyền, tôi phát hiện ba route cakes và `/availability/book` không có guard hiệu lực: đặt guard ở service không bảo vệ các route. Tôi đã chuyển guard sang các route bị ảnh hưởng. Ban đầu, 12 trong 14 ca test thất bại; sau khi sửa, cả 14 ca đều thành công.
+Khi rà soát danh sách route, tôi phát hiện `POST /cakes`, `PATCH /cakes/:id`, `DELETE /cakes/:id` và `POST /availability/book` không có guard hiệu lực. Guard của các route cakes được đặt trên class `CakesService`, và một bài test cho thấy cách này không có tác dụng: request không có token vẫn được chấp nhận. Tôi đã thêm `JwtBlacklistGruard`, `AdminGuard` và `@IsAdmin()` vào bốn route này. `POST /availability/book` không có HTTP caller (chỉ `BookingService` gọi `bookSlot`), nên không làm thay đổi flow hiện có. File test mới bao phủ ba route cakes: trước khi sửa, 12 trong 14 ca thất bại; sau khi sửa, cả 14 ca đều thành công. `POST /availability/book` chưa có test riêng. Các decorator trên `CakesService` vẫn còn trong code, và `POST /availability/hold` vẫn chưa có guard.
 
-Test cho `AuthService`, `AuthController` và `RedisService` vẫn chỉ có `should be defined`. `JwtBlacklistGruard` được kiểm thử với handler public, request thiếu token (`401`), sai role (`403`) và token đã bị blacklist (`401`). Vẫn chưa có test cho đăng nhập, làm mới, đăng xuất hay lỗi Redis.
+`AuthService`, `AuthController` và `RedisService` chỉ có test `should be defined`. `JwtBlacklistGruard` có một test cho handler public; ngoài ra, guard được kiểm thử thông qua các route cakes với request thiếu token (`401`), sai role (`403`) và token đã bị blacklist (`401`). Chưa có test cho đăng nhập, làm mới, đăng xuất hay lỗi Redis.
 
 ## 5. Những điều tôi sẽ làm khác đi
 
-Vấn đề đặt guard được nêu ở mục 4 đã được xử lý. Các hướng dưới đây chưa được thực hiện trong code.
+Vấn đề đặt guard trên bốn route được nêu ở mục 4 đã được xử lý. Các hướng dưới đây chưa được thực hiện trong code.
 
 1. **AT cũ còn dùng được sau khi làm mới.** Gửi kèm AT trong request làm mới, hoặc đọc `jti` của AT từ header `Authorization`, rồi thêm `jti` đó vào blacklist cùng lúc với RT cũ. Thay đổi ở endpoint `/auth/refresh` và `AuthService`. Chi phí là thêm một lần ghi Redis cho mỗi lần làm mới.
 
