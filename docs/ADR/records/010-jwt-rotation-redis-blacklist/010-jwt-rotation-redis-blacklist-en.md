@@ -41,13 +41,15 @@ When an expired RT, or an RT with a wrong signature, is sent to the refresh endp
 
 Tokens are stored in `localStorage`, and the repo has no CSP or security header configuration. If the admin page is injected with a malicious script, the script can read the tokens.
 
-The limits about login (no limit on password attempts, `MinLength(6)` not enforced because there is no `ValidationPipe`) and the fact that `AdminGuard` lets a request pass when an endpoint has no `IS_ADMIN_KEY` are covered in ADR-011.
+About login and authorization: the login route has no limit on password attempts; `MinLength(6)` in `AdminDto` is not enforced because this route has no `ValidationPipe`; and `AdminGuard` lets a request pass when an endpoint has no `IS_ADMIN_KEY`, so access control depends on whether each route is marked.
 
-The tests only have `should be defined` for `AuthService`, `AuthController` and `RedisService`. `JwtBlacklistGruard` has one test for a public handler. There is no test for login, refresh, logout or Redis errors.
+During an authorization review, I found that three cake routes and `/availability/book` had no effective guard: putting a guard in a service does not protect its routes. I moved the guard to the affected routes. Initially, 12 of the 14 test cases failed; after the fix, all 14 passed.
+
+The tests still only have `should be defined` for `AuthService`, `AuthController` and `RedisService`. `JwtBlacklistGruard` is tested with a public handler, a request with no token (`401`), a wrong role (`403`), and a blacklisted token (`401`). There is no test for login, refresh, logout or Redis errors.
 
 ## 5. What I'd do differently
 
-The directions below have not been implemented in the code.
+The guard-placement issue noted in section 4 has been fixed. The directions below have not been implemented in the code.
 
 1. **The old AT still works after a refresh.** Send the AT with the refresh request, or read the `jti` of the AT from the `Authorization` header, and add that `jti` to the blacklist together with the old RT. The change is in the `/auth/refresh` endpoint and `AuthService`. The cost is one more Redis write for each refresh.
 
