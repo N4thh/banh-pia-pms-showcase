@@ -1,5 +1,7 @@
 # Architecture Decision Records — Banh Pia PMS
 
+Languages: [English](./README.md) · [Tiếng Việt](./README-vi.md)
+
 This folder documents the key engineering decisions made while building and
 operating Banh Pía PMS in production — including the trade-offs considered,
 what was rejected, and why. Written primarily in Vietnamese (my working
@@ -25,3 +27,4 @@ Decision → Trade-offs & Limitations → What I'd do differently.
 | 008 | Pricing and money integrity | Store money as `Decimal`; calculate and verify amounts on the BE | Applied | [VI](./records/008-pricingNmoney-integrity/008-pricingNmoney-integrity-vi.md) · [EN](./records/008-pricingNmoney-integrity/008-pricingNmoney-integrity-en.md) |
 | 009 | Rate limiting and anti-spam | IP-based request limiting with Redis | Applied in part | [VI](./records/009-rate-limiting-anti-spam/009-rate-limiting-anti-spam-vi.md) · [EN](./records/009-rate-limiting-anti-spam/009-rate-limiting-anti-spam-en.md) |
 | 010 | Admin authentication and token revocation | Rotating JWTs with a Redis blacklist | Applied | [VI](./records/010-jwt-rotation-redis-blacklist/010-jwt-rotation-redis-blacklist-vi.md) · [EN](./records/010-jwt-rotation-redis-blacklist/010-jwt-rotation-redis-blacklist-en.md) |
+| 011 | Asynchronous processing for notifications and expired orders | BullMQ queues with a cron fallback for expired-order cancellation | Applied | [VI](./records/011-async-processing-bullmq/011-async-processing-bullmq-vi.md) · [EN](./records/011-async-processing-bullmq/011-async-processing-bullmq-en.md) |
