@@ -1,12 +1,12 @@
 # Architecture Decision Records — Banh Pia PMS
 
-Languages: [English](./README.md) · [Tiếng Việt](./README-vi.md)
+Languages: [English](./README.md)
 
 This folder documents the key engineering decisions made while building and
 operating Banh Pía PMS in production — including the trade-offs considered,
 what was rejected, and why. Written primarily in Vietnamese (my working
-language during development); English versions are provided for the most
-significant decisions.
+language during development). Each ADR is available in Vietnamese and
+English.
 
 ## Format
 

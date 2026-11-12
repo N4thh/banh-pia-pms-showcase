@@ -47,7 +47,7 @@ sequenceDiagram
     participant Event as EventEmitter2 (Memory)
 
     %% 1. Signature Verification
-    PayOS->>Server: HTTP POST /payment/payos-webhook (Webhook Payload)
+    PayOS->>Server: HTTP POST /payment/webhook (Webhook Payload)
     Note over Server: 1. Verify Signature via SDK<br/>(PAYOS_CHECKSUM_KEY)
     alt Signature Invalid
         Server-->>PayOS: HTTP 400 Bad Request (Invalid Signature)
@@ -92,7 +92,7 @@ sequenceDiagram
 
 ## 4. Đánh đổi và giới hạn
 
-- **Độ chính xác của tiền tệ:** Phân tích hạn chế về kiểu dữ liệu của Number và hướng giải quyết chuẩn hóa.
+- **Độ chính xác của tiền tệ:** xem ADR-008.
 - **Ở tình huống nào hệ thống chắc chắn sẽ "gãy":** Khi PayOS gửi retry webhook 2 request gần như là đồng nhất, thì hệ thống chưa xử lý được: nếu request thứ hai đến trước khi transaction của request đầu commit xong, vẫn có thể xảy ra xử lý trùng lặp. Dù có unique constraint chặn ở tầng DB, nhưng chưa có row-level lock ngay khi request đầu tiên bắt đầu transaction — nên vẫn tồn tại khoảng hở thời gian trước khi constraint được kiểm tra.
 - **Tính nhất quán trong việc phát event:** Đặt việc phát event ra Telegram nằm ngoài transaction (PAYMENT_SUCCESS). Nếu sever crash vào lúc ghi vào DB nhưng event chưa được gửi đi — giới hạn của việc chưa sử dụng Outbox Pattern.
 - Ngoài ra ở hệ thống hiện tại của tôi chỉ kiểm tra nếu ra status là "PROCESSING" chưa có phần giải quyết nếu status là "CANCELLED".

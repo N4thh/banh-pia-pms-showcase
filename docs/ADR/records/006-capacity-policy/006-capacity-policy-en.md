@@ -36,9 +36,6 @@ The absolute constraint of the system when an order goes over the limit: the tot
 | **A: Use only one hard limit** | Simple, the logic is easy to understand, and it does not take much time. | The bakery loses opportunities it could have. It lowers the user experience when a problem happens. | It makes the system too rigid and loses "valuable" data. |
 | **B: Two levels, Soft Limit & Hard Limit with a buffer** | Improves the user experience, and also adds a small part of revenue for the bakery. | It has to check in several steps, and creates constraints that the system must have to keep the variables under control. | — (chosen option) |
 
-**Comparison question about the capacity management mechanism:**
-What is the difference between rejecting immediately when the standard limit is reached and allowing more orders in a controlled buffer?
-
 It is the "softness" inside a "rigid" system: loosening constraints that are too strict because of the numbers.
 
 ---

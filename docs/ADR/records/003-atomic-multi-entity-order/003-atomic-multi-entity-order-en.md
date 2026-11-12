@@ -1,16 +1,11 @@
-## ADR-[003]: Atomic Multi-Entity Order Creation & Boundary Design
+# ADR-003: Atomic Multi-Entity Order Creation & Boundary Design
 
-**Date Written:** [25/09/2026] **Status:** [Implemented]
+**Date:** 25/09/2026
+**Status:** Applied
 
 ---
 
 ### 1. Context
-
-1. **How is this problem different from ADR-001 (only 1 Availability table)?**
-2. **What specific scenario shows that if this is not handled correctly, the system can break?**
-3. **Why can't this problem be solved by writing to each table independently and checking errors manually after each step?**
-
-Answers:
 
 1.
 
@@ -75,7 +70,7 @@ This is why Redis was chosen as a temporary state layer from the beginning, and 
 ### 4. Trade-offs & Limitations
 
 - At first, I planned to put the Redis hold key inside the transaction because I expected that if Redis failed, the transaction would also be rolled back. However, after reviewing and researching more about how DB and Redis work, I realized that approach was incorrect and changed to the current solution.
-- For bank transfer payments, the slot hold only exists for 10 minutes. To clean up expired orders, I use a compensation mechanism: when an order is created, the system adds a job delayed by 10 minutes to BullMQ. When the job is due, the worker checks the order; if the order still has status 'NEW', it changes it to 'CANCELLED' with the reason 'payment expired'.
+- For bank transfer payments, the slot hold only exists for 10 minutes. To clean up expired orders, I use a compensation mechanism: when an order is created, the system adds a job delayed by 10 minutes to BullMQ for each item. When the job is due, the worker checks the order; if the order still has status 'NEW', it changes it to 'CANCELLED' with the reason 'payment expired'.
 - While rewriting the pseudocode for the createOrder function, the biggest thing I discovered was that the redis-hold-key should not be placed inside the try-catch block that handles Redis failures.
 
 ---

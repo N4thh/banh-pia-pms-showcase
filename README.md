@@ -6,7 +6,7 @@ The technical part was where the real challenge was. We had to handle the kinds 
 
 ![Demo đặt hàng](docs/images/orderflow.gif)
 
-![Mobile Lading page](docs/images/landingPage-mobile.png)
+![Mobile Landing page](docs/images/landingPage-mobile.png)
 
 ## Production
 
@@ -29,14 +29,11 @@ The system handled a full month of live seasonal sales (Aug 26 – Sep 29, 2026)
 | Fulfillment split | 93% pickup, 7% delivery |
 
 Cancellation breakdown: customer request (5), payment expired (2), other (2),
-out of stock (1), duplicate order (1) — the automatic BullMQ delayed worker cancellation
-(see [ADR-003](./docs/ADR/records/003-atomic-multi-entity-order/003-atomic-multi-entity-order-vi.md))
-correctly caught the `PAYMENT_EXPIRED` cases without affecting already-paid orders.
+out of stock (1), duplicate order (1). The automatic expiry cancellation (a BullMQ delayed job with a cron fallback;
+see [ADR-011](./docs/ADR/records/011-async-processing-bullmq/011-async-processing-bullmq-vi.md) and [ADR-004](./docs/ADR/records/004-order-cancellation-concurrency-control/004-order-cancellation-concurrency-control-vi.md))
+handled the `PAYMENT_EXPIRED` cases.
 
-> Note: the 3% overbooking buffer (see [ADR-001](./docs/ADR/records/001-concurrency-control/001-concurrency-control-vi.md))
-> was never actually triggered this season — real traffic never reached the point
-> of contention it was designed for. The mechanism has been verified through
-> simulated concurrent-request testing, not yet by live traffic at that scale.
+> Note: At the end of the season, no day had `currentBooked` exceed `maxCapacity`; whether the buffer was used during the season was not recorded.
 
 
 ## Highlights
@@ -48,13 +45,13 @@ correctly caught the `PAYMENT_EXPIRED` cases without affecting already-paid orde
   The system creates payment links, verifies PayOS webhook signatures, checks the exact transaction amount, and prevents duplicate processing when PayOS retries the webhook multiple times. This helps avoid duplicate notifications and repeated status updates after payment.
 
 - **Automatic background tasks**
-  BullMQ and Redis handle automatic cancellation of unpaid bank-transfer orders after 10 minutes, while releasing the reserved cake quantity back to stock. The logic is designed to avoid canceling an order that was just confirmed as paid.
+  BullMQ and Redis handle automatic cancellation of unpaid bank-transfer orders after 10 minutes, with a per-minute cron as a fallback if Redis loses a job, while releasing the reserved cake quantity back to stock. The logic is designed to avoid canceling an order that was just confirmed as paid.
 
 - **A dashboard that is easy for non-technical people to use**
   Revenue, orders, best-selling products, and traffic are tracked by day and week. The system also helps manage daily cake output and overbooking in a way that keeps the customer experience smooth without sacrificing a little extra revenue. Everything was designed so my mom can operate it day by day without stress.
 
 - **Security with JWT rotation**
-  Access and refresh tokens, password hashing with bcrypt, and Redis-based token blacklisting make sure old tokens cannot still be used after logout or refresh. That reduces the risk if a token is leaked.
+  Access and refresh tokens, password hashing with bcrypt, and Redis-based token blacklisting are used, so a logged-out token or a used refresh token is revoked; an old access token stays valid until it expires (15 minutes). That reduces the risk if a token is leaked.
 
 ![Demo dashboard admin](docs/images/admin.gif)
 

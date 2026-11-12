@@ -1,7 +1,7 @@
-# ADR-[001]: Concurrency Control
+# ADR-001: Concurrency Control
 
-**Ngày viết:** [07/09/2026]  
-**Trạng thái:** [Đã áp dụngi]
+**Ngày viết:** 07/09/2026  
+**Trạng thái:** Đã áp dụng
 
 ---
 
@@ -10,8 +10,6 @@
 Làm sao đảm bảo dữ liệu hệ thống vẫn chính xác khi nhiều client cùng đọc/ghi gần như đồng thời? Tại vì chỉ cách một vài ms khi cả 2 client A và B cùng bấm đặt tại một thời điểm gần như đồng nhất thì dữ liệu đọc vào có thể tạo ra sự khác biệt.
 
 Ví dụ thực tế khi hệ thống còn 1 slot bánh duy nhất và client A là người đến trước hệ thống vẫn hiển thị còn hàng vì chưa cập nhật kịp. Nhưng tại thời điểm client B vào bấm đặt bánh thì lúc này request từ client A vẫn chưa giải quyết xong, hậu quả là client B vẫn được phép đặt bánh và tạo nên tình huống double booking - cả hai client đều nhận được thông báo đặt bánh thành công, cả hai đều bị trừ tiền, nhưng thực tế kho chỉ đủ cho một người.
-
-Trả lời:
 
 - Chúng ta cần đảm bảo tại một thời điểm chỉ có một người được đọc và ghi vào dữ liệu của hệ thống. Nên tôi đã quyết định sử dụng pessimistic locking cho tình huống này.
 - Đồng thời kết hợp với over-booking tạo thêm một bufferLimit = maxCapacity + 3% * maxCapacity (giới hạn cứng) - tổng số lượng bánh mà admin nhập vào mỗi ngày. Để nới lỏng độ cứng nhắc của hệ thống, đồng thời tăng trải nghiệm người dùng đồng thời có thể tạo ra một khoảng doanh thu nhỏ từ 3% này. Vì sao là 3%, vì đây là mức rủi ro over-sell tối đa mà tiệm bánh vẫn xử lý bù được bằng tay.
@@ -80,9 +78,9 @@ sequenceDiagram
     else newBooked <= bufferLimit (Vẫn nằm trong giới hạn cho phép)
         note over B: Kiểm tra thành công!
         alt newBooked > maxCapacity (Vượt ngưỡng mềm)
-            note over B: Đơn hàng được xếp trạng thái: WAITLIST
+            note over B: Hệ thống trả về status: WAITLIST (giá trị trả về, không lưu DB)
         else newBooked <= maxCapacity (Trong tầm công suất)
-            note over B: Đơn hàng được xếp trạng thái: CONFIRMED
+            note over B: Hệ thống trả về status: CONFIRMED (giá trị trả về, không lưu DB)
         end
         B->>DB: UPDATE "Availability" SET currentBooked = newBooked
         B->>DB: COMMIT Transaction
