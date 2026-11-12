@@ -7,14 +7,6 @@
 
 ## 1. Bối cảnh
 
-**Câu hỏi 1.1:** Trong hệ thống Bánh Pía PMS, có 3 tác nhân độc lập nào cùng có khả năng tác động/chuyển đổi trạng thái của một đơn hàng? Kịch bản tranh chấp xấu nhất giữa Admin và BullMQ delayed worker tại cùng 1 mili-giây là gì?
-
-**Câu hỏi 1.2:** Ràng buộc bất biến về Trạng thái cuối của đơn hàng quy định điều gì? Nếu một Webhook thanh toán gửi về trễ sau khi BullMQ delayed worker/Admin đã hủy đơn, hệ thống phải xử lý thế nào để không làm "sống lại" đơn hàng?
-
-**Câu hỏi 1.3:** Ràng buộc bất biến về Xả slot công suất bánh quy định số lần tối đa slot được phép xả cho 1 đơn hàng bị hủy là bao nhiêu? Nếu bị xả 2 lần thì hậu quả kinh doanh là gì?
-
-**Trả lời:**
-
 **1.1:** Trong hệ thống PMS hiện tại có 3 tác nhân độc lập tác động vào việc chuyển đổi trạng thái của một đơn hàng, đó chính là: Admin, BullMQ delayed worker (xử lý các đơn hàng quá hạn) và Webhook từ PayOS. Kịch bản tệ nhất là tranh chấp giữa Admin và worker tại cùng một mili giây — và đây không chỉ là rủi ro lý thuyết: khi rà lại code (xem mục 4.3), tôi xác nhận ban đầu Worker tự cập nhật trạng thái đơn mà không qua cùng cơ chế khóa với `cancelOrderById`, khiến cả 2 có thể cùng đọc trạng thái 'NEW' và cùng xả slot, dẫn đến overbooking do slot bị hoàn trả thừa.
 
 **1.2:** Hệ thống PMS có một ràng buộc bất biến về trạng thái cuối của đơn hàng: đó chính là nếu đơn hàng đang là "CANCELLED" hoặc "COMPLETED" thì sẽ không được quay trở lại bất kì trạng thái nào trước đó. Nếu Webhook thanh toán gửi về trễ sau khi BullMQ delayed worker/Admin đã hủy đơn thì hệ thống sẽ kiểm tra: nếu đơn đã nằm trong 1 trong 2 trạng thái trên, trả về lỗi rằng đơn đã được hủy/hoàn thành trước đó.
@@ -53,8 +45,10 @@
 
 **4.3:** Ban đầu, worker xử lý đơn quá hạn (BullMQ) tự cập nhật đơn trực tiếp, không sử dụng cùng cơ chế với hàm `cancelOrderById` của booking service — tạo ra một race condition tiềm ẩn: cả worker và admin có thể cùng đọc trạng thái 'NEW' rồi cùng xả slot. Sau khi rà lại, tôi sửa để worker dùng chung hàm `cancelOrderById` với admin, đảm bảo đồng nhất cơ chế khóa và giải quyết triệt để vấn đề trên.
 
+**4.4:** Ngoài worker, còn một cron chạy mỗi phút cũng hủy các đơn chuyển khoản quá hạn (xem ADR-011). Cron hủy bằng `updateMany` với điều kiện status `NEW`, không dùng chung `cancelOrderById`, và nhả slot sau khi commit, ngoài transaction.
+
 ---
 
 ### 5. Những điều tôi sẽ làm khác đi
 
-**5.1:** Hệ thống của tôi đã có sẵn BullMQ + Redis với worker đã viết sẵn nhánh `order.cancelled` để báo các đơn bị hủy do quá hạn. Nhưng vì thông báo này khiến các đơn mới của mẹ tôi bị trôi mất trong luồng tin nhắn, tôi đã quyết định không bật tính năng này. Nếu lần sau làm lại tôi sẽ thiết kế lại phần nhận thông báo cho mẹ tôi một cách trực quan hơn, để mẹ tôi vẫn nhận được thông báo khi có đơn bị hủy, mà không bị lẫn với thông báo đơn hàng mới.
+**5.1:** Hệ thống của tôi đã có sẵn BullMQ + Redis với worker đã viết sẵn nhánh `order.cancelled.auto` để báo các đơn bị hủy do quá hạn. Nhưng vì thông báo này khiến các đơn mới của mẹ tôi bị trôi mất trong luồng tin nhắn, tôi đã quyết định không bật tính năng này. Nếu lần sau làm lại tôi sẽ thiết kế lại phần nhận thông báo cho mẹ tôi một cách trực quan hơn, để mẹ tôi vẫn nhận được thông báo khi có đơn bị hủy, mà không bị lẫn với thông báo đơn hàng mới.

@@ -47,7 +47,7 @@ sequenceDiagram
     participant Event as EventEmitter2 (Memory)
 
     %% 1. Signature Verification
-    PayOS->>Server: HTTP POST /payment/payos-webhook (Webhook Payload)
+    PayOS->>Server: HTTP POST /payment/webhook (Webhook Payload)
     Note over Server: 1. Verify Signature via SDK<br/>(PAYOS_CHECKSUM_KEY)
     alt Signature Invalid
         Server-->>PayOS: HTTP 400 Bad Request (Invalid Signature)
@@ -92,7 +92,7 @@ sequenceDiagram
 
 ## 4. Trade-offs & Limitations
 
-- **Currency precision:** Needs an analysis of the limitations of the Number data type and a direction for standardizing it.
+- **Money precision:** see ADR-008.
 - **Under what condition the system will definitely "break":** When PayOS retries the webhook and sends 2 nearly simultaneous requests, the system cannot yet handle this case: if the second request arrives before the first request's transaction has finished committing, duplicate processing can still occur. Even though there is a unique constraint blocking it at the DB layer, there is no row-level lock in place right when the first request begins its transaction — so there is still a race window before the constraint gets checked.
 - **Consistency of event emission:** The Telegram event emission (PAYMENT_SUCCESS) is placed outside the transaction. If the server crashes right after writing to the DB but before the event is sent — this is a limitation of not yet using the Outbox Pattern.
 - Additionally, my current system only checks for the "PROCESSING" status and does not yet have a handling path for the "CANCELLED" status.

@@ -66,12 +66,12 @@ The system uses the `payosOrderCode` in the webhook data to find the `PaymentLin
 
 **Limitations / inconsistencies in the current codebase:**
 
-- At the moment, when an order is cancelled, the system only does a soft cancel of the order (changing its status to CANCELLED) and does not touch `PaymentLink`, so the payment link still exists, both on the system side and on the PayOS side. If a customer still pays through that link, the system will handle it incorrectly, even though the order has been paid.
+- At the moment, when an order is cancelled, the system does a soft cancel of the order (changing its status to CANCELLED) and updates `PaymentLink` to CANCELLED, but it does not cancel the link on the PayOS side, so the payment link still exists on the PayOS side. If a customer still pays through that link, the system will handle it incorrectly, even though the order has been paid.
 - The random generation from 100,000,000 to 999,999,999 can still produce the same code twice, and the system does not have a check for this yet.
 
 ---
 
 ## 5. What I'd do differently
 
-- I would make the payment link cancellation flow better by cancelling on both sides: the system and PayOS. This keeps both sides in sync and prevents the case where a customer still pays through PayOS's own link.
+- I would make the payment link cancellation flow better by also cancelling the link on the PayOS side. This keeps both sides in sync and prevents the case where a customer still pays through PayOS's own link.
 - I would check for duplicates of `payosOrderCode` to make sure each generated link is unique.

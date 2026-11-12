@@ -7,14 +7,6 @@
 
 ## 1. Context
 
-**Question 1.1:** In the Bánh Pía PMS system, which 3 independent actors can all change the status of an order? What is the worst-case conflict scenario between Admin and the BullMQ delayed worker happening at the same millisecond?
-
-**Question 1.2:** What does the invariant about an order's final status require? If a payment webhook arrives late, after BullMQ delayed worker/Admin has already cancelled the order, how should the system handle it so the order does not "come back to life"?
-
-**Question 1.3:** What does the invariant about releasing cake slot capacity say about the maximum number of times a slot can be released for one cancelled order? If it is released twice, what is the business impact?
-
-**Answer:**
-
 **1.1:** In the current PMS system, there are 3 independent actors that can change an order's status: the Admin, the BullMQ delayed worker (which handles expired orders), and the PayOS webhook. The worst-case scenario is a conflict between Admin and the worker at the exact same millisecond — and this is not just a theoretical risk: after reviewing the code (see section 4.3), I confirmed that the worker originally updated the order status directly, without going through the same locking mechanism as `cancelOrderById`. This meant both could read the status as `'NEW'` at the same time and both release the slot, leading to overbooking from the slot being released twice.
 
 **1.2:** The PMS system has an invariant about an order's final status: once an order is `"CANCELLED"` or `"COMPLETED"`, it can never go back to any earlier status. If a payment webhook arrives late, after BullMQ delayed worker/Admin has already cancelled the order, the system checks whether the order is already in one of these two statuses, and if so, returns an error saying the order has already been cancelled/completed.
@@ -52,6 +44,8 @@
 **4.2 (Deliberately redundant lock on Availability):** In theory, the `UPDATE` statement that releases the slot is already atomic. However, I still chose to use a manual `SELECT FOR UPDATE` on the `Availability` table to keep the codebase consistent, so that anyone (including myself later on) reading the code would clearly see the intent behind this decision, instead of mistaking it for a missed step.
 
 **4.3:** Originally, the worker that handles expired orders (BullMQ) updated the order directly, without using the same mechanism as the booking service's `cancelOrderById` — this created a hidden race condition: both the worker and the admin could read the `'NEW'` status at the same time and both release the slot. After reviewing this, I changed the worker to call the same `cancelOrderById` function as the admin, so the locking mechanism is consistent and the problem above is fully resolved.
+
+**4.4:** Besides the worker, a cron job runs every minute and also cancels expired bank transfer orders (see ADR-011). The cron cancels with `updateMany` with the condition status `NEW`. It does not use the shared `cancelOrderById`, and it releases slots after the commit, outside the transaction.
 
 ---
 

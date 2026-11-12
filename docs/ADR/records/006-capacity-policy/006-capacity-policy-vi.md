@@ -36,9 +36,6 @@ Ràng buộc tuyệt đối của hệ thống khi đơn hàng vượt quá gi�
 | **A: Chỉ áp dụng một mức giới hạn cứng** | Đơn giản, logic dễ hiểu và không mất thời gian. | Mất đi những cơ hội mà tiệm bánh có thể có. Làm giảm trải nghiệm của người dùng khi gặp vấn đề. | Làm hệ thống quá cứng nhắc và mất đi những dữ liệu "quý giá". |
 | **B: Phân tầng Soft Limit & Hard Limit có vùng đệm** | Tăng trải nghiệm người dùng, cũng như tăng một phần nhỏ doanh thu cho tiệm bánh. | Phải kiểm tra ở nhiều bước, sinh ra những ràng buộc mà hệ thống phải có để đảm bảo các biến số diễn ra trong tầm kiểm soát. | — (phương án được chọn) |
 
-**Câu hỏi so sánh cơ chế quản lý công suất:**
-Sự khác biệt giữa việc từ chối ngay lập tức khi chạm mốc tiêu chuẩn với cho phép nhận thêm trong vùng đệm có kiểm soát là gì?
-
 Đó chính là sự "mềm mại" trong một hệ thống "cứng nhắc": nới lỏng những ràng buộc quá chặt chẽ mà các con số mang lại.
 
 ---

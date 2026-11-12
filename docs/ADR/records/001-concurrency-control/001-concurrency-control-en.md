@@ -1,7 +1,7 @@
-# ADR-[001]: Concurrency Control
+# ADR-001: Concurrency Control
 
-**Date:** [07/09/2026]  
-**Status:** [Implemented]
+**Date:** 07/09/2026  
+**Status:** Applied
 
 ---
 
@@ -12,8 +12,6 @@ How can we ensure that the system data remains accurate when multiple clients re
 Even a difference of only a few milliseconds between Client A and Client B placing an order at nearly the same time can cause them to read different data states.
 
 For example, when the system has only 1 cake slot remaining and Client A is the first to place an order, the system may still show the slot as available because the data has not been updated yet. However, when Client B places an order, Client A's request may still be in progress. As a result, Client B is also allowed to place an order, creating a double-booking situation - both clients receive a successful booking notification, both are charged, but in reality, the inventory is only sufficient for one customer.
-
-### Answer:
 
 - We need to ensure that, at any given time, only one client can read and write the relevant system data. Therefore, I decided to use **pessimistic locking** for this situation.
 - At the same time, we combine this with **over-booking** by adding a `bufferLimit = maxCapacity + 3% * maxCapacity` (`hard limit`) - the total number of cakes entered by the admin each day. This helps make the system less rigid, improve the user experience, and potentially generate a small amount of additional revenue from this 3% buffer. Why 3%? Because this is the maximum over-sell risk that the bakery can still handle manually.
@@ -82,9 +80,9 @@ sequenceDiagram
     else newBooked <= bufferLimit (Within acceptable limit)
         note over B: Validation passed!
         alt newBooked > maxCapacity (Soft limit exceeded)
-            note over B: Set Order Status: WAITLIST
+            note over B: System returns status: WAITLIST (return value only, not saved to DB)
         else newBooked <= maxCapacity (Standard capacity)
-            note over B: Set Order Status: CONFIRMED
+            note over B: System returns status: CONFIRMED (return value only, not saved to DB)
         end
         B->>DB: UPDATE "Availability" SET currentBooked = newBooked
         B->>DB: COMMIT Transaction

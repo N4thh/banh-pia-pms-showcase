@@ -66,12 +66,12 @@ Hệ thống dùng `payosOrderCode` trong dữ liệu webhook để tìm bản g
 
 **Giới hạn / điểm chưa đồng bộ trong codebase hiện tại:**
 
-- Hiện tại khi hủy đơn, hệ thống chỉ hủy mềm đơn (chuyển trạng thái thành CANCELLED) mà không đụng tới `PaymentLink`, nên link thanh toán vẫn tồn tại, cả ở phía hệ thống lẫn phía PayOS. Nếu khách vẫn thanh toán vào link đó thì hệ thống sẽ xử lý sai, dù đơn đã được thanh toán.
+- Hiện tại khi hủy đơn, hệ thống hủy mềm đơn (chuyển trạng thái thành CANCELLED) và cập nhật `PaymentLink` sang CANCELLED, nhưng không hủy link ở phía PayOS, nên link thanh toán vẫn tồn tại ở phía PayOS. Nếu khách vẫn thanh toán vào link đó thì hệ thống sẽ xử lý sai, dù đơn đã được thanh toán.
 - Việc sinh ngẫu nhiên từ 100.000.000 đến 999.999.999 vẫn có khả năng trùng mã, và hệ thống chưa có phần kiểm tra việc này.
 
 ---
 
 ## 5. Những điều tôi sẽ làm khác đi
 
-- Tôi sẽ làm luồng hủy link thanh toán tốt hơn, hủy cả hai phía: hệ thống và PayOS, để có sự đồng bộ và ngăn trường hợp khách vẫn thanh toán vào link riêng của PayOS.
+- Tôi sẽ làm luồng hủy link thanh toán tốt hơn, hủy thêm link ở phía PayOS, để có sự đồng bộ và ngăn trường hợp khách vẫn thanh toán vào link riêng của PayOS.
 - Tôi sẽ kiểm tra trùng lặp của `payosOrderCode` để đảm bảo mỗi link được sinh ra là duy nhất.
